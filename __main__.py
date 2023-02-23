@@ -13,27 +13,34 @@ import pygame as pg
 import pygame.display
 from pygame.locals import *
 from config import config
-from letters.environment import Background, Player
+from letters.environment import Background, Player, Ground
 
 main_window = pg.display.set_mode((config.WIDTH, config.HEIGHT))
-main_window.fill((255, 255, 255))
 pg.display.set_caption("Juego de las letras")
 FPS_CLOCK = pg.time.Clock()
 background = Background()
 player = Player()
-
+ground = Ground()
+ground_group = pg.sprite.Group()
+ground_group.add(ground)
 while True:
+    player.gravity_check(player, ground_group)
     for event in pygame.event.get():
         if event.type == QUIT:
             pygame.quit()
             sys.exit()
 
         if event.type == pg.KEYDOWN:
-            print(event)
+            if event.key == pg.K_SPACE:
+                player.jump(ground_group)
+            if event.key == pg.K_ESCAPE:
+                pygame.quit()
+                sys.exit()
 
     # render bg
     player.move()
     background.render(main_window)
+    ground.render(main_window)
     main_window.blit(player.image, player.rect)
     pygame.display.update()
     FPS_CLOCK.tick(config.GAME_FPS)

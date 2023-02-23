@@ -41,24 +41,50 @@ class Background(Sprite):
 
 class Ground(Sprite):
     def __init__(self):
-        super(Ground, self).__init__()
+        super().__init__()
+        ground_level = 916  # todo: resize to positioning the sprites in ground
+        self.prepare_background_img("assets/imgs/ground.png")
+        if self.original_bg:
+            self.image = load("assets/imgs/ground.png")
+        else:
+            self.image = load("assets/imgs/res_ground.png")
+        self.rect = self.image.get_rect(center=(config.WIDTH//2, config.HEIGHT//2))
+    def prepare_background_img(self, img_path):
+        """
+        Method to fix background size prior to drawing it wrong
+        :param img_path:
+        :return:
+        """
+        img = io.imread(img_path)
+        if img.shape == np.array((config.WIDTH, config.HEIGHT)):
+            self.original_bg = True
+        else:
+            resized = transform.resize(img, (config.HEIGHT, config.WIDTH))
+            resized_int = (resized * 255).round().astype(np.uint8)
+            io.imsave("assets/imgs/res_ground.png", resized_int)
+            self.original_bg = False
+
+    def render(self, window: display) -> None:
+        window.blit(self.image, (self.rect.x, self.rect.y))
 
 
 class Player(Sprite):
     def __init__(self):
 
-        super(Player, self).__init__()
+        super().__init__()
         self.image = load("assets/imgs/kamu.png")
         self.rect = self.image.get_rect()
 
         # position
         self.vx = 0
-        self.pos = vec(340, 240)
+        self.pos = vec(50, 916) # todo: set correctly the ground level by scaling to window properties
         self.vel = vec(0, 0)
         self.acc = vec(0, 0)
         self.direction = "RIGHT"
+        self.jumping = False
 
     def move(self):
+        self.acc = vec(0, 0.5)
         if abs(self.vel.x) > 0.3:
             self.running = True
         else:
@@ -89,6 +115,25 @@ class Player(Sprite):
     def attack(self):
         pass
 
-    def jump(self):
-        pass
+    def jump(self, ground_group):
+        self.rect.x += 1
+
+        # Check to see if payer is in contact with the ground
+        hits = pg.sprite.spritecollide(self, ground_group, False)
+
+        self.rect.x -= 1
+
+        # If touching the ground, and not currently jumping, cause the player to jump.
+        if hits and not self.jumping:
+            self.jumping = True
+            self.vel.y = -12
+
+    def gravity_check(self, player, ground_group):
+        hits = pg.sprite.spritecollide(player, ground_group, False)
+        if self.vel.y > 0:
+            if hits:
+                lowest= hits[0]
+                if self.pos.y < lowest.rect.bottom:
+                    self.pos.y = lowest.rect.top + 1
+                    self.jumping = False
 
